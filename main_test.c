@@ -1,13 +1,20 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+
 #include "blowfish.h"
+
+void tencrypt(uint8_t *plaintext_string, uint8_t *key, uint8_t *ciphertext_string);
+void tdecrypt(uint8_t *ciphertext_string, uint8_t *key, uint8_t *plaintext_string);
 
 int main(char *argc, char **argv) {
 
-	FILE* fp = NULL;	
-	char* source = NULL;
+	FILE *fp = NULL;	
+	char *source = NULL;
 	long filesize;
 	size_t newLen;
+	uint8_t *key = "key"; 
+	int i = 0;
 
 	if((fp = fopen(argv[1], "r")) != NULL) {
 		if (fseek(fp, 0L, SEEK_END) == 0) {
@@ -24,35 +31,34 @@ int main(char *argc, char **argv) {
 			} else {
 				source[++newLen] = '\0';
 			}
-		}
-	}	
+		}	
+	}
 
+	uint8_t *ciphertext_string = malloc(sizeof(uint8_t) * 16 + sizeof(uint8_t) * 16 * (8 / 8) + 1000);
+	uint8_t *plaintext_string = malloc(sizeof(uint8_t) * 16 + sizeof(uint8_t) * 16 * (8 / 8) + 1000);
+	
+	printf("Plaintext message string is: %s\n", source);
+	tencrypt(source, key, ciphertext_string);
+	printf("Encrypted message string is: %s\n", ciphertext_string);
+	tdecrypt(ciphertext_string, key, source);
+	printf("Plaintext message string is: %s\n", source);
+
+	free(source);
+
+	return 0;
+}
+
+void tencrypt(uint8_t *plaintext_string, uint8_t *key, uint8_t *ciphertext_string) {
 	blowfish_t ctx;
-	int n;
 
-	/* must be less than 56 bytes */
-	uint8_t *key = "a random number string would be a better key";
 	int keylen = strlen(key);
-
-	uint8_t *plaintext_string = malloc(sizeof(uint8_t) * 300);
-	strcpy(plaintext_string, source);
 	int plaintext_len = strlen(plaintext_string);
-
-	uint8_t ciphertext_buffer[256];
-	uint8_t *ciphertext_string = &ciphertext_buffer[0];
-	int ciphertext_len = 0;
 
 	uint32_t message_left;
 	uint32_t message_right;
 	int block_len;
 
 	init(&ctx, key, keylen);
-
-	printf("Plaintext message string is: %s\n", plaintext_string);
-
-	/* encrypt the plaintext message string */
-	printf("Encrypted message string is: ");
-
 	while (plaintext_len) {
 		message_left = message_right = 0UL;
 
@@ -77,11 +83,7 @@ int main(char *argc, char **argv) {
 			}
 		}
 
-		/* encrypt and print the results */
 		encrypt(&ctx, &message_left, &message_right);
-		printf("%lx%lx", message_left, message_right);
-
-		/* save the results for decryption below */
 		*ciphertext_string++ = (uint8_t)(message_left >> 24);
 		*ciphertext_string++ = (uint8_t)(message_left >> 16);
 		*ciphertext_string++ = (uint8_t)(message_left >> 8);
@@ -90,15 +92,22 @@ int main(char *argc, char **argv) {
 		*ciphertext_string++ = (uint8_t)(message_right >> 16);
 		*ciphertext_string++ = (uint8_t)(message_right >> 8);
 		*ciphertext_string++ = (uint8_t)message_right;
-		ciphertext_len += 8;
+	}
+	
+	*ciphertext_string = '\0';	
+}
 
-	}	
-	printf("\n");
+void tdecrypt(uint8_t *ciphertext_string, uint8_t *key, uint8_t *plaintext_string) {
+	blowfish_t ctx;
+	
+	int keylen = strlen(key);
+	int ciphertext_len = strlen(ciphertext_string);
 
-	/* reverse the process */
-	printf("Decrypted message string is: ");
+	uint32_t message_left;
+	uint32_t message_right;
+	int block_len;
 
-	ciphertext_string = &ciphertext_buffer[0];
+	init(&ctx, key, keylen);
 	while(ciphertext_len) {
 		message_left = message_right = 0UL;
 
@@ -119,17 +128,15 @@ int main(char *argc, char **argv) {
 		}
 
 		decrypt(&ctx, &message_left, &message_right);
-
-		/* if plaintext message string padded, extra zeros here */
-
-		printf("%c%c%c%c%c%c%c%c",
-				(int)(message_left >> 24), (int)(message_left >> 16),
-				(int)(message_left >> 8), (int)(message_left),
-				(int)(message_right >> 24), (int)(message_right >> 16),
-				(int)(message_right >> 8), (int)(message_right));
+		*plaintext_string++ = (uint8_t)(message_left >> 24);
+		*plaintext_string++ = (uint8_t)(message_left >> 16);
+		*plaintext_string++ = (uint8_t)(message_left >> 8);
+		*plaintext_string++ = (uint8_t)message_left;
+		*plaintext_string++ = (uint8_t)(message_right >> 24);
+		*plaintext_string++ = (uint8_t)(message_right >> 16);
+		*plaintext_string++ = (uint8_t)(message_right >> 8);
+		*plaintext_string++ = (uint8_t)message_right;
 	}
 
-	printf("\n");
-
-	return 0;
+	*plaintext_string = '\0';
 }
