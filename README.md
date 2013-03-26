@@ -26,6 +26,6 @@ Optional :
 
 Examples :
 
-./Ksecret "MySecretKey" -d ./MyPasswordFile  // Decrypt the specified file
-./Ksecret "MySecretKey" -e ./MyPasswordFile  // Encrypt the speficied file
-./Ksecret "MySecretKey" ./MyPasswordFile     // Use the application to manage the specified file
+./Ksecret -D -k "MySecretKey" -f ./MyPasswordFile  // Decrypt the specified file
+./Ksecret -E -k "MySecretKey" -f ./MyPasswordFile  // Encrypt the speficied file
+./Ksecret -k "MySecretKey" -f ./MyPasswordFile     // Use the application to manage the specified file
