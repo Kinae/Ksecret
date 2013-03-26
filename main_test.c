@@ -1,51 +1,113 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <getopt.h>
 
 #include "blowfish.h"
+
 
 void tencrypt(uint8_t *plaintext_string, uint8_t *key, uint8_t *ciphertext_string);
 void tdecrypt(uint8_t *ciphertext_string, uint8_t *key, uint8_t *plaintext_string);
 
-int main(char *argc, char **argv) {
+int main(int argc, char **argv) {
 
 	FILE *fp = NULL;	
 	char *source = NULL;
+	char *filepath = NULL;
 	long filesize;
 	size_t newLen;
-	uint8_t *key = "key"; 
-	int i = 0;
+	uint8_t *key = NULL; 
 
-	if((fp = fopen(argv[1], "r")) != NULL) {
-		if (fseek(fp, 0L, SEEK_END) == 0) {
-			if((filesize = ftell(fp)) == -1) {
-			}
+	int optch;
+	extern int opterr;
+	char format[] = "f:k:DE";
 
-			source = malloc(sizeof(char) * (filesize + 1));
-			if (fseek(fp, 0L, SEEK_SET) == 0) {
-			}
+	opterr = 1;
 
-			newLen = fread(source, sizeof(char), filesize, fp);
-			if (newLen == 0) {
-				fputs("Error reading file", stderr);
-			} else {
-				source[++newLen] = '\0';
-			}
-		}	
+	while((optch = getopt(argc, argv, format)) != -1) {
+		switch(optch) {
+			case 'f':
+				filepath = optarg;
+				break;
+			case 'k':
+				key = optarg;
+				break;
+			case 'D':
+			case 'E':
+				break;
+		}
 	}
 
-	uint8_t *ciphertext_string = malloc(sizeof(uint8_t) * 16 + sizeof(uint8_t) * 16 * (8 / 8) + 1000);
-	uint8_t *plaintext_string = malloc(sizeof(uint8_t) * 16 + sizeof(uint8_t) * 16 * (8 / 8) + 1000);
+	if(key == NULL) { 
+		fprintf(stderr, "No secret key has been specified. Use the -k option to set the secret key\n");
+		return EXIT_FAILURE;
+	}
+
+	if(filepath == NULL) {
+		fprintf(stderr, "No file has been specified. Use the -f option to set the filepath\n");
+		return EXIT_FAILURE;
+	}
+
+	if((fp = fopen(filepath, "r")) == NULL) {
+		perror("Error opening file");
+		return EXIT_FAILURE;
+	}
+
+	if (fseek(fp, 0L, SEEK_END) != 0) {
+		perror("Uneable to read the file");
+		return EXIT_FAILURE;
+	}
+
+	if((filesize = ftell(fp)) == -1) {
+		perror("Uneable to read the file");
+		return EXIT_FAILURE;
+	}
+
+	if((source = malloc(sizeof(char) * (filesize + 1) + 100)) == NULL) {
+		perror("Uneable allocating memory");
+		return EXIT_FAILURE;
+	}
 	
+	if (fseek(fp, 0L, SEEK_SET) != 0) {
+		perror("Uneable to read the file");
+		return EXIT_FAILURE;
+	}
+
+	if((newLen = fread(source, sizeof(char), filesize, fp)) == 0) {
+		perror("Error reading file");
+		return EXIT_FAILURE;
+	} else {
+		source[++newLen] = '\0';
+	}
+
+	fclose(fp);
+
 	printf("Plaintext message string is: %s\n", source);
+	
+	uint8_t *ciphertext_string = malloc(sizeof(uint8_t) * 16 + sizeof(uint8_t) * 16 * (strlen(source) / 16) + 1000);
+	if(ciphertext_string == NULL) {
+		perror("error allocating memory");
+		return EXIT_FAILURE;
+	}
+
 	tencrypt(source, key, ciphertext_string);
 	printf("Encrypted message string is: %s\n", ciphertext_string);
+
+	uint8_t *plaintext_string = malloc(sizeof(uint8_t) * strlen(ciphertext_string) + 1000);
+	if(plaintext_string == NULL) {
+		perror("Error allocating memory");
+		return EXIT_FAILURE;
+	}
+
 	tdecrypt(ciphertext_string, key, source);
 	printf("Plaintext message string is: %s\n", source);
 
 	free(source);
+	free(ciphertext_string);
+	free(plaintext_string);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 void tencrypt(uint8_t *plaintext_string, uint8_t *key, uint8_t *ciphertext_string) {
