@@ -6,7 +6,6 @@
 
 #include "blowfish.h"
 
-
 void tencrypt(uint8_t *plaintext_string, uint8_t *key, uint8_t *ciphertext_string);
 void tdecrypt(uint8_t *ciphertext_string, uint8_t *key, uint8_t *plaintext_string);
 
