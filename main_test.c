@@ -15,8 +15,8 @@ int main(int argc, char **argv) {
 	FILE *fp = NULL;	
 	char *source = NULL;
 	char *filepath = NULL;
-	long filesize;
-	size_t newLen;
+	long filesize = 0;
+	size_t newLen = 0;
 	uint8_t *key = NULL; 
 
 	int optch;
@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
 		return EXIT_FAILURE;
 	}
 
-	if((source = malloc(sizeof(char) * (filesize + 1) + 100)) == NULL) {
+	if((source = calloc(filesize + 2, sizeof(char))) == NULL) {
 		perror("Uneable allocating memory");
 		return EXIT_FAILURE;
 	}
@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
 
 	printf("Plaintext message string is: %s\n", source);
 	
-	uint8_t *ciphertext_string = malloc(sizeof(uint8_t) * 16 + sizeof(uint8_t) * 16 * (strlen(source) / 16) + 1000);
+	uint8_t *ciphertext_string = calloc(16 + strlen(source) + 1, sizeof(uint8_t));
 	if(ciphertext_string == NULL) {
 		perror("error allocating memory");
 		return EXIT_FAILURE;
@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
 	tencrypt(source, key, ciphertext_string);
 	printf("Encrypted message string is: %s\n", ciphertext_string);
 
-	uint8_t *plaintext_string = malloc(sizeof(uint8_t) * strlen(ciphertext_string) + 1000);
+	uint8_t *plaintext_string = calloc(strlen(ciphertext_string) + 1, sizeof(uint8_t));
 	if(plaintext_string == NULL) {
 		perror("Error allocating memory");
 		return EXIT_FAILURE;
