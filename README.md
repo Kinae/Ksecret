@@ -24,6 +24,7 @@ The main application is a database of my passwords. It will encrypt and decrypt 
 	* [$file] The path of the file. If no mode is specified, the application will load into memory the decrypted file with the key. If a mode is specified, the application will encrypt/decrypt the file to let the user manage the file. 
 
 **Optional :**
+
 	* [$mode] The mode if used to encrypt (--e) or decrypt (--d) the specified file.
 
 **Examples :**
