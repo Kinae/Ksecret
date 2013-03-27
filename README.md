@@ -1,6 +1,8 @@
 Ksecret
 =======
 
+**Author :** Defraine Anthony (Kinaesthesia)
+
 Project to learn more specific technical cryptography skill.
 
 The algorithm is **Blowfish.**
