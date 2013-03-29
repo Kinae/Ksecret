@@ -6,17 +6,18 @@
 
 #include "blowfish.h"
 
-void tencrypt(uint8_t *plaintext_string, uint8_t *key, uint8_t *ciphertext_string);
-void tdecrypt(uint8_t *ciphertext_string, uint8_t *key, uint8_t *plaintext_string);
+int decryption_mode(uint8_t *key, char *filepath);
+int encryption_mode(uint8_t *key, char *filepath);
+
+int tencrypt(uint8_t *plaintext_string, uint8_t *key, uint32_t *ciphertext_string);
+int tdecrypt(uint32_t *ciphertext_string, int ciphertext_len, uint8_t *key, uint8_t *plaintext_string);
 
 int main(int argc, char **argv) {
 
-	FILE *fp = NULL;	
-	char *source = NULL;
 	char *filepath = NULL;
-	long filesize = 0;
-	size_t newLen = 0;
-	uint8_t *key = NULL; 
+	uint8_t *key = NULL;
+	int app_mode = 0;
+	int ret_value = 0; 
 
 	int optch;
 	extern int opterr;
@@ -33,7 +34,10 @@ int main(int argc, char **argv) {
 				key = optarg;
 				break;
 			case 'D':
+				app_mode = 1;
+				break;
 			case 'E':
+				app_mode = 2;
 				break;
 		}
 	}
@@ -48,78 +52,161 @@ int main(int argc, char **argv) {
 		return EXIT_FAILURE;
 	}
 
-	if((fp = fopen(filepath, "r")) == NULL) {
-		perror("Error opening file");
-		return EXIT_FAILURE;
+	switch(app_mode) {
+		case 0 :
+			break;
+		case 1 :
+		 	ret_value = decryption_mode(key, filepath);	
+			break;
+		case 2 :
+			ret_valu = encryption_mode(key, filepath);
+			break;
 	}
-
-	if (fseek(fp, 0L, SEEK_END) != 0) {
-		perror("Uneable to read the file");
-		return EXIT_FAILURE;
-	}
-
-	if((filesize = ftell(fp)) == -1) {
-		perror("Uneable to read the file");
-		return EXIT_FAILURE;
-	}
-
-	if((source = calloc(filesize + 2, sizeof(char))) == NULL) {
-		perror("Uneable allocating memory");
-		return EXIT_FAILURE;
-	}
-	
-	if (fseek(fp, 0L, SEEK_SET) != 0) {
-		perror("Uneable to read the file");
-		return EXIT_FAILURE;
-	}
-
-	if((newLen = fread(source, sizeof(char), filesize, fp)) == 0) {
-		perror("Error reading file");
-		return EXIT_FAILURE;
-	} else {
-		source[++newLen] = '\0';
-	}
-
-	fclose(fp);
-
-	printf("Plaintext message string is: %s\n", source);
-	
-	uint8_t *ciphertext_string = calloc(16 + strlen(source) + 1, sizeof(uint8_t));
-	if(ciphertext_string == NULL) {
-		perror("error allocating memory");
-		return EXIT_FAILURE;
-	}
-
-	tencrypt(source, key, ciphertext_string);
-	printf("Encrypted message string is: %s\n", ciphertext_string);
-
-	uint8_t *plaintext_string = calloc(strlen(ciphertext_string) + 1, sizeof(uint8_t));
-	if(plaintext_string == NULL) {
-		perror("Error allocating memory");
-		return EXIT_FAILURE;
-	}
-
-	tdecrypt(ciphertext_string, key, source);
-	printf("Plaintext message string is: %s\n", source);
-
-	free(source);
-	free(ciphertext_string);
-	free(plaintext_string);
 
 	return EXIT_SUCCESS;
 }
 
-void tencrypt(uint8_t *plaintext_string, uint8_t *key, uint8_t *ciphertext_string) {
+
+int decryption_mode(uint8_t *key, char *filepath) {
+	
+	FILE *fp = NULL;	
+	long filesize = 0;
+	size_t size = 0;
+	uint32_t *source = NULL;
+	uint8_t *buffer = NULL;
+	uint8_t *plaintext_string = NULL;
+	
+	if((fp = fopen(filepath, "r")) == NULL) {
+		perror("Error opening file");
+		return -1;
+	}
+
+	if (fseek(fp, 0L, SEEK_END) != 0) {
+		perror("Uneable to read the file");
+		return -1;
+	}
+
+	if((filesize = ftell(fp)) == -1) {
+		perror("Uneable to read the file");
+		return -1;
+	}
+
+	if((source = malloc((filesize + 2) *  sizeof(uint32_t))) == NULL) {
+		perror("Uneable allocating memory");
+		return -1;
+	}
+	
+	if (fseek(fp, 0L, SEEK_SET) != 0) {
+		perror("Uneable to read the file");
+		return -1;
+	}
+
+	if((size = fread(source, sizeof(uint32_t), filesize, fp)) == 0) {
+		perror("Error reading file");
+		return -1;
+	}
+
+	fclose(fp);
+
+  if((buffer = calloc(size + 1, sizeof(uint32_t))) == NULL) {
+		perror("Error allocating memory");
+		return -1;
+	}
+
+  plaintext_string = buffer;
+ 	size = tdecrypt(source, size, key, buffer);
+
+	if((fp = fopen(filepath, "w")) == NULL) {
+		perror("Error opening file");
+		return -1;
+	}
+
+	fwrite(plaintext_string, sizeof(uint8_t), size, fp);
+
+	fclose(fp);
+	free(source);
+	free(buffer);
+
+	return 0;
+}
+
+int encryption_mode(uint8_t *key, char *filepath) {
+
+	FILE *fp = NULL;	
+	long filesize = 0;
+	size_t size = 0;
+	uint8_t *source = NULL;
+	uint32_t *buffer = NULL;
+	uint32_t *ciphertext_string = NULL; 
+	
+	if((fp = fopen(filepath, "r")) == NULL) {
+		perror("Error opening file");
+		return -1;
+	}
+
+	if (fseek(fp, 0L, SEEK_END) != 0) {
+		perror("Uneable to read the file");
+		return -1;
+	}
+
+	if((filesize = ftell(fp)) == -1) {
+		perror("Uneable to read the file");
+		return -1;
+	}
+
+	if((source = malloc((filesize + 2) *  sizeof(uint8_t))) == NULL) {
+		perror("Uneable allocating memory");
+		return -1;
+	}
+	
+	if (fseek(fp, 0L, SEEK_SET) != 0) {
+		perror("Uneable to read the file");
+		return -1;
+	}
+
+	if((size = fread(source, sizeof(uint8_t), filesize, fp)) == 0) {
+		perror("Error reading file");
+		return -1;
+	}
+
+	fclose(fp);
+	
+	if((buffer = calloc(size + 1, sizeof(uint32_t))) == NULL) {
+		perror("error allocating memory");
+		return -1;
+	}
+
+	ciphertext_string = buffer;
+	size = tencrypt(source, key, buffer);
+	
+	if((fp = fopen(filepath, "w")) == NULL) {
+		perror("Error opening file");
+		return -1;
+	}
+
+	fwrite(ciphertext_string, sizeof(uint32_t), size, fp);
+
+	fclose(fp);
+	free(source);	
+	free(buffer);
+	
+	return 0;
+}
+
+int tencrypt(uint8_t *plaintext_string, uint8_t *key, uint32_t *ciphertext_string) {
+	
 	blowfish_t ctx;
-
-	int keylen = strlen(key);
-	int plaintext_len = strlen(plaintext_string);
-
+	int keylen = 0; 
+	int plaintext_len = 0;
+	int ciphertext_len = 0;
 	uint32_t message_left;
 	uint32_t message_right;
 	int block_len;
 
+	keylen = strlen(key);
+	plaintext_len = strlen(plaintext_string);	
 	init(&ctx, key, keylen);
+
 	while (plaintext_len) {
 		message_left = message_right = 0UL;
 
@@ -145,59 +232,44 @@ void tencrypt(uint8_t *plaintext_string, uint8_t *key, uint8_t *ciphertext_strin
 		}
 
 		encrypt(&ctx, &message_left, &message_right);
-		*ciphertext_string++ = (uint8_t)(message_left >> 24);
-		*ciphertext_string++ = (uint8_t)(message_left >> 16);
-		*ciphertext_string++ = (uint8_t)(message_left >> 8);
-		*ciphertext_string++ = (uint8_t)message_left;
-		*ciphertext_string++ = (uint8_t)(message_right >> 24);
-		*ciphertext_string++ = (uint8_t)(message_right >> 16);
-		*ciphertext_string++ = (uint8_t)(message_right >> 8);
-		*ciphertext_string++ = (uint8_t)message_right;
+		*ciphertext_string++ = message_left;
+		*ciphertext_string++ = message_right;
+		ciphertext_len += 2;
 	}
-	
-	*ciphertext_string = '\0';	
+
+	return ciphertext_len;
 }
 
-void tdecrypt(uint8_t *ciphertext_string, uint8_t *key, uint8_t *plaintext_string) {
-	blowfish_t ctx;
-	
-	int keylen = strlen(key);
-	int ciphertext_len = strlen(ciphertext_string);
+int tdecrypt(uint32_t *ciphertext_string, int ciphertext_len, uint8_t *key, uint8_t *plaintext_string) {
 
+	blowfish_t ctx;
+	int keylen = 0;
+	int plaintext_len = 0;
 	uint32_t message_left;
 	uint32_t message_right;
 	int block_len;
 
-	init(&ctx, key, keylen);
+	keylen = strlen(key);
+	init(&ctx, key, keylen);	
+
 	while(ciphertext_len) {
-		message_left = message_right = 0UL;
-
-		for (block_len = 0; block_len < 4; block_len++) {
-			message_left = message_left << 8;
-			message_left += *ciphertext_string++;
-			if (ciphertext_len) {
-				ciphertext_len--;
-			}
-		}
-		
-		for (block_len = 0; block_len < 4; block_len++) {
-			message_right = message_right << 8;
-			message_right += *ciphertext_string++;
-			if (ciphertext_len) {
-				ciphertext_len--;
-			}
-		}
-
+		message_left = *ciphertext_string++;
+		message_right = *ciphertext_string++;
+	
 		decrypt(&ctx, &message_left, &message_right);
+	
 		*plaintext_string++ = (uint8_t)(message_left >> 24);
 		*plaintext_string++ = (uint8_t)(message_left >> 16);
 		*plaintext_string++ = (uint8_t)(message_left >> 8);
-		*plaintext_string++ = (uint8_t)message_left;
+		*plaintext_string++ = (uint8_t)(message_left);
 		*plaintext_string++ = (uint8_t)(message_right >> 24);
 		*plaintext_string++ = (uint8_t)(message_right >> 16);
 		*plaintext_string++ = (uint8_t)(message_right >> 8);
-		*plaintext_string++ = (uint8_t)message_right;
+		*plaintext_string++ = (uint8_t)(message_right);
+
+		ciphertext_len -= 2;
+		plaintext_len += 8;	
 	}
 
-	*plaintext_string = '\0';
+	return plaintext_len;
 }
