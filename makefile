@@ -1,21 +1,28 @@
 CC=gcc
 CFLAGS=-ansi -W  
-EXEC=Ksecret
+
+BINDIR=bin/
+OBJDIR=obj/
+SRCDIR=src/
+
+EXEC=$(BINDIR)Ksecret
 
 all: $(EXEC)
 
-Ksecret:	main_test.o blowfish.o
+$(BINDIR)Ksecret:	$(OBJDIR)main_test.o $(OBJDIR)blowfish.o
 					$(CC) -o $@ $^
 
-blowfish.o:	blowfish.c
+$(OBJDIR)blowfish.o:	$(SRCDIR)blowfish.c
 						$(CC) -o $@ -c $< $(CFLAGS)
 
-main_test.o: 	main_test.c blowfish.h
+$(OBJDIR)main_test.o: 	$(SRCDIR)main_test.c $(SRCDIR)blowfish.h
 							$(CC) -o $@ -c $< $(CFLAGS)
 
-clean: 
-				rm -rf *.o
+.PHONY: clean mrproper
 
-mrproper:
+clean: 
+				rm -rf $(OBJDIR)*.o
+
+mrproper: clean
 				rm -rf $(EXEC)
 					
