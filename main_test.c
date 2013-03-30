@@ -6,6 +6,10 @@
 
 #include "blowfish.h"
 
+#define APPLICATION_MODE	0
+#define ENCRYPTION_MODE 	1	
+#define DECRYPTION_MODE	 	2
+
 int decryption_mode(uint8_t *key, char *filepath);
 int encryption_mode(uint8_t *key, char *filepath);
 
@@ -16,7 +20,7 @@ int main(int argc, char **argv) {
 
 	char *filepath = NULL;
 	uint8_t *key = NULL;
-	int app_mode = 0;
+	int app_mode = APPLICATION_MODE;
 	int ret_value = 0; 
 
 	int optch;
@@ -34,10 +38,10 @@ int main(int argc, char **argv) {
 				key = optarg;
 				break;
 			case 'D':
-				app_mode = 1;
+				app_mode = ENCRYPTION_MODE;
 				break;
 			case 'E':
-				app_mode = 2;
+				app_mode = DECRYPTION_MODE;
 				break;
 		}
 	}
@@ -53,13 +57,21 @@ int main(int argc, char **argv) {
 	}
 
 	switch(app_mode) {
-		case 0 :
+		case APPLICATION_MODE :
 			break;
-		case 1 :
+		case DECRYPTION_MODE :
 		 	ret_value = decryption_mode(key, filepath);	
+			if(ret_value == -1) {
+				fprintf(stderr, "Error while decrypting\n");	
+				return EXIT_FAILURE;
+			}
 			break;
-		case 2 :
+		case ENCRYPTION_MODE :
 			ret_value = encryption_mode(key, filepath);
+			if(ret_value == -1) {
+				fprintf(stderr, "Error while encrypting\n");	
+				return EXIT_FAILURE;
+			}
 			break;
 	}
 
@@ -106,7 +118,10 @@ int decryption_mode(uint8_t *key, char *filepath) {
 		return -1;
 	}
 
-	fclose(fp);
+	if(fclose(fp) != 0) {
+		perror("Error closing file");
+		return -1;
+	}
 
   if((buffer = calloc(size + 1, sizeof(uint32_t))) == NULL) {
 		perror("Error allocating memory");
@@ -121,9 +136,16 @@ int decryption_mode(uint8_t *key, char *filepath) {
 		return -1;
 	}
 
-	fwrite(plaintext_string, sizeof(uint8_t), size, fp);
+	if((fwrite(plaintext_string, sizeof(uint8_t), size, fp)) == 0){
+		perror("Error writing file");
+		return -1;
+	}
 
-	fclose(fp);
+	if(fclose(fp) != 0) {
+		perror("Error closing file");
+		return -1;
+	}
+
 	free(source);
 	free(buffer);
 
@@ -169,10 +191,14 @@ int encryption_mode(uint8_t *key, char *filepath) {
 		return -1;
 	}
 
-	fclose(fp);
 	
 	if((buffer = calloc(size + 1, sizeof(uint32_t))) == NULL) {
 		perror("error allocating memory");
+		return -1;
+	}
+
+	if(fclose(fp) != 0) {
+		perror("Error closing file");
 		return -1;
 	}
 
@@ -184,9 +210,16 @@ int encryption_mode(uint8_t *key, char *filepath) {
 		return -1;
 	}
 
-	fwrite(ciphertext_string, sizeof(uint32_t), size, fp);
+	if((fwrite(ciphertext_string, sizeof(uint32_t), size, fp)) == 0) {
+		perror("Error writing file");
+		return -1;
+	}
 
-	fclose(fp);
+	if(fclose(fp) != 0) {
+		perror("Error closing file");
+		return -1;
+	}
+
 	free(source);	
 	free(buffer);
 	
