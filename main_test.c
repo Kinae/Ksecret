@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
 		 	ret_value = decryption_mode(key, filepath);	
 			break;
 		case 2 :
-			ret_valu = encryption_mode(key, filepath);
+			ret_value = encryption_mode(key, filepath);
 			break;
 	}
 
