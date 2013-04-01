@@ -11,8 +11,7 @@ OBJDIR=obj/
 SRCDIR=src/
 
 EXEC=$(BINDIR)Ksecret
-OBJ=$(OBJDIR)main_test.o $(OBJDIR)blowfish.o $(OBJDIR)encryption.o $(OBJDIR)decryption.o  \
-		$(OBJDIR)application.o
+OBJ=$(OBJDIR)main.o $(OBJDIR)blowfish.o $(OBJDIR)encryption.o $(OBJDIR)decryption.o 
 
 all: $(EXEC)
 
@@ -28,10 +27,7 @@ $(OBJDIR)encryption.o: $(SRCDIR)encryption.c $(SRCDIR)encryption.h
 $(OBJDIR)decryption.o: $(SRCDIR)decryption.c $(SRCDIR)decryption.h
 											$(CC) -o $@ -c $< $(CFLAGS)
 
-$(OBJDIR)application.o: $(SRCDIR)application.c $(SRCDIR)application.h
-											$(CC) -o $@ -c $< $(CFLAGS)
-
-$(OBJDIR)main_test.o: $(SRCDIR)main_test.c $(SRCDIR)encryption.h $(SRCDIR)decryption.h $(SRCDIR)application.h
+$(OBJDIR)main.o: $(SRCDIR)main.c $(SRCDIR)encryption.h $(SRCDIR)decryption.h
 											$(CC) -o $@ -c $< $(CFLAGS)
 
 .PHONY: clean mrproper
