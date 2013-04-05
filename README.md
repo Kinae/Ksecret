@@ -12,7 +12,6 @@ This is the step to follow :
 	1. Implementation of blowfish.
 	2. Test a simple word encryption and decryption.
 	3. Test a file encryption (32 bytes block encryption with a padding to 64).
-	4. Creation of the main application.
 
 The main application is a database of my passwords. It will encrypt and decrypt a file that contains my passwords. 
 
@@ -33,4 +32,3 @@ The main application is a database of my passwords. It will encrypt and decrypt 
 
 	* ./Ksecret -D -k "MySecretKey" -f ./MyPasswordFile  // Decrypt the specified file
 	* ./Ksecret -E -k "MySecretKey" -f ./MyPasswordFile  // Encrypt the speficied file
-	* ./Ksecret -k "MySecretKey" -f ./MyPasswordFile     // Use the application to manage the specified file
